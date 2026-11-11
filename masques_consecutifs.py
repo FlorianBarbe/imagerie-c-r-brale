@@ -22,9 +22,7 @@ def calculer_masque(reference, image):
         raise ValueError("Les deux images doivent avoir les mêmes dimensions.")
 
     difference = reference.astype(np.float32) - image.astype(np.float32)
-    difference = cv2.normalize(difference, None, 0, 255, cv2.NORM_MINMAX)
     gauss = cv2.GaussianBlur(difference, (5, 5), 1)
-    gauss = cv2.normalize(gauss, None, 0, 255, cv2.NORM_MINMAX)
 
     hauteur, largeur = gauss.shape
     y, x = np.ogrid[:hauteur, :largeur]
@@ -37,16 +35,15 @@ def calculer_masque(reference, image):
     spectre_filtre = np.fft.ifftshift(spectre * passe_bande[:, :, None], axes=(0, 1))
     filtree = cv2.idft(spectre_filtre, flags=cv2.DFT_SCALE | cv2.DFT_REAL_OUTPUT)
 
-    positive = np.maximum(filtree, 0)
-    limite = np.percentile(positive, 99)
-    contraste = np.zeros_like(positive, dtype=np.uint8)
-    if limite > 0:
-        contraste = np.rint(255 * np.clip(positive / limite, 0, 1)).astype(np.uint8)
+    # Estimation robuste du bruit de la différence filtrée.
+    centree = filtree - np.median(filtree)
+    bruit = 1.4826 * np.median(np.abs(centree))
 
-    seuil_otsu, _ = cv2.threshold(contraste, 0, 1, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-    outil = (contraste > min(seuil_otsu + 30, 255)).astype(np.uint8)
-    _, etiquettes, stats, _ = cv2.connectedComponentsWithStats(outil, connectivity=8)
-    garder = stats[:, cv2.CC_STAT_AREA] >= 20
+    # Le seuil bas suit les contours. Le seuil haut valide chaque composante.
+    candidats = (centree > 2 * bruit).astype(np.uint8)
+    _, etiquettes, stats, _ = cv2.connectedComponentsWithStats(candidats, connectivity=8)
+    graines = np.bincount(etiquettes[centree > 4 * bruit], minlength=len(stats))
+    garder = (graines > 0) & (stats[:, cv2.CC_STAT_AREA] >= 60)
     garder[0] = False
     outil = garder[etiquettes].astype(np.uint8)
     noyau = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
