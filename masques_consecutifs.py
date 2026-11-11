@@ -7,6 +7,13 @@ import cv2
 import numpy as np
 
 
+OUVERTURES = {
+    "croix3": (cv2.MORPH_CROSS, 3),
+    "carre3": (cv2.MORPH_RECT, 3),
+    "ellipse5": (cv2.MORPH_ELLIPSE, 5),
+}
+
+
 def lire_image(chemin):
     if not chemin.is_file():
         raise FileNotFoundError(f"Image introuvable : {chemin}")
@@ -62,7 +69,15 @@ def main():
         "--sortie", type=Path, default=Path("masques_consecutifs"),
         help="dossier de destination des masques PNG",
     )
+    parser.add_argument(
+        "--ouverture", choices=OUVERTURES,
+        help="élément structurant de l’ouverture finale",
+    )
     args = parser.parse_args()
+    noyau = None
+    if args.ouverture:
+        forme, taille = OUVERTURES[args.ouverture]
+        noyau = cv2.getStructuringElement(forme, (taille, taille))
 
     reference = lire_image(args.images / "frame_201.png")
     deja_detecte = np.zeros(reference.shape, dtype=bool)
@@ -71,7 +86,11 @@ def main():
         image = lire_image(args.images / f"frame_{numero}.png")
         detection = calculer_masque(reference, image) == 0
         nouveaux_pixels = detection & ~deja_detecte
-        masque = np.where(nouveaux_pixels, 0, 255).astype(np.uint8)
+        # L’ouverture agit sur le fil, codé à 1 avant conversion en PNG.
+        premier_plan = nouveaux_pixels.astype(np.uint8)
+        if noyau is not None:
+            premier_plan = cv2.morphologyEx(premier_plan, cv2.MORPH_OPEN, noyau)
+        masque = (1 - premier_plan) * 255
         destination = args.sortie / f"masque_{numero}.png"
         if not cv2.imwrite(str(destination), masque):
             raise OSError(f"Impossible d’enregistrer le masque : {destination}")
