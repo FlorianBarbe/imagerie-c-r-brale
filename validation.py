@@ -17,6 +17,7 @@ def mesurer(estimation, annotation):
     """Calcule les erreurs sur les masques binaires avec un pic égal à 1."""
     if estimation.shape != annotation.shape:
         raise ValueError("Les masques comparés doivent avoir les mêmes dimensions.")
+    # Sur un masque 0/1, l’erreur absolue et son carré valent tous deux 1 si les pixels diffèrent.
     erreurs = estimation != annotation
     sad = int(erreurs.sum())
     mse = float(erreurs.mean())

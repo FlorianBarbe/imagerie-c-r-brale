@@ -38,7 +38,7 @@ def valider(images, resultats, sortie):
     vues_union = {}
     animation_union = []
     contraste = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-    disque = disk(2)
+    disque = disk(2)  # Tolérance de deux pixels autour du tracé manuel.
 
     for numero in range(211, 292, 10):
         image = lire_image(images / f"frame_{numero}.png")
@@ -47,6 +47,7 @@ def valider(images, resultats, sortie):
 
         ref_catheter = dilation(lire_image(images / f"{numero}_MicroCath.tiff") == 0, disque)
         ref_guidewire = dilation(lire_image(images / f"{numero}_GuideWire.tiff") == 0, disque)
+        # Le contraste rehaussé sert uniquement aux figures.
         fond = contraste.apply(image)
         vue_union = superposer(fond, catheter, guidewire)
         vues_union[str(numero)] = cv2.cvtColor(vue_union, cv2.COLOR_BGR2RGB)

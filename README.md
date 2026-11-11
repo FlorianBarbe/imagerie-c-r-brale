@@ -1,6 +1,6 @@
 # Imagerie cérébrale · compte rendu ATRIM
 
-Ouvrir [le compte rendu](compte_rendu_atrim_fusionne.ipynb) dans JupyterLab. Les figures sont intégrées au notebook.
+Ouvrir [le notebook du TP5](TP5-background-substraction-sv.ipynb) dans JupyterLab. Le compte rendu et ses figures suivent l’énoncé.
 Le code et les données permettent de reproduire les masques des deux outils et leur validation.
 
 Depuis ce dossier, avec Python 3.10 ou plus récent :

@@ -23,6 +23,7 @@ def zone_sans_artefacts(forme):
     hauteur, largeur = forme
     y, x = np.ogrid[:hauteur, :largeur]
     bord_gauche = (x < round(45 * largeur / 512)) & (y < round(240 * hauteur / 512))
+    # La bande du bas s’arrête à gauche du tracé descendant du microcathéter.
     bord_bas = (
         (y >= round(485 * hauteur / 512))
         & (x >= round(290 * largeur / 512))

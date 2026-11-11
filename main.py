@@ -22,8 +22,10 @@ def main():
     for numero in range(211, 292, 10):
         image = lire_image(args.images / f"frame_{numero}.png")
         _, masque = segmenter_outil(reference, image)
+        # On retire les artefacts de bord avant d’attribuer les pixels aux deux outils.
         masque &= zone_sans_artefacts(masque.shape)
         catheter, guidewire = separer_outils(masque)
+        # Pour les PNG : 0 indique un pixel d’outil et 255 un pixel du fond.
         for nom, outil in (("catheter", catheter), ("guidewire", guidewire)):
             ecrire_png(fusion / f"masque_{nom}_{numero}.png",
                        (~outil).astype("uint8") * 255)
