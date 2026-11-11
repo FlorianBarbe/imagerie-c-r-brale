@@ -4,8 +4,8 @@ import numpy as np
 from segmentation import calculer_masque
 
 
-def suivre_pointe(reference, images):
-    """Produit les masques des nouvelles détections dans l’ordre temporel."""
+def suivre_pointe_catheter(reference, images):
+    """Produit les masques des nouvelles détections du cathéter dans l’ordre temporel."""
     y, x = np.ogrid[-2:3, -2:3]
     noyau_erosion = (
         (abs(x) + abs(y) <= 2) | ((abs(x) == 2) & (x == -2 * y))

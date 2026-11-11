@@ -11,9 +11,12 @@ def ecrire_png(chemin, image):
         raise OSError(f"Écriture impossible : {chemin}")
 
 
-def superposer(image, outil):
+def superposer(image, outil=None, repere=None):
     couleur = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-    couleur[outil] = (0, 255, 0)
+    if repere is not None:
+        couleur[repere] = (0, 0, 255)
+    if outil is not None:
+        couleur[outil] = (0, 255, 0)
     return couleur
 
 

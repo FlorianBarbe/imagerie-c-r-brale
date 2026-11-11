@@ -5,8 +5,9 @@ from pathlib import Path
 
 import cv2
 
+from repere_guidewire import detecter_repere_guidewire
 from segmentation import lire_image, segmenter_outil
-from suivi_pointe import suivre_pointe
+from suivi_pointe_catheter import suivre_pointe_catheter
 from validation import annotation_manuelle, exporter_scores, exporter_scores_intermediaires, mesurer
 from visualisation import ecrire_png, exporter_gif, planche, superposer, tracer_scores
 
@@ -23,8 +24,10 @@ def main():
     images = [lire_image(args.images / f"frame_{numero}.png") for numero in numeros]
     intermediaires = args.sortie / "intermediaires"
     validation = args.sortie / "validation"
-    suivi = args.sortie / "suivi_pointe"
-    for dossier in (intermediaires, validation, suivi):
+    suivi = args.sortie / "suivi_pointe_catheter"
+    fusion = args.sortie / "fusion_outils"
+    guidewire_rouge = args.sortie / "guidewire_rouge"
+    for dossier in (intermediaires, validation, suivi, fusion, guidewire_rouge):
         dossier.mkdir(parents=True, exist_ok=True)
 
     scores = []
@@ -54,12 +57,26 @@ def main():
     tracer_scores(validation / "scores.png", scores)
 
     superpositions = []
-    for numero, image, outil in zip(numeros, images, suivre_pointe(premiere, images), strict=True):
+    superpositions_fusion = []
+    superpositions_guidewire = []
+    for numero, image, outil in zip(numeros, images, suivre_pointe_catheter(premiere, images), strict=True):
         vert = superposer(image, outil)
         ecrire_png(suivi / f"masque_{numero}.png", (~outil).astype("uint8") * 255)
         ecrire_png(suivi / f"resultat_{numero}.png", vert)
         superpositions.append(vert)
+
+        repere = detecter_repere_guidewire(image)
+        combinaison = superposer(image, outil, repere)
+        ecrire_png(fusion / f"masque_guidewire_{numero}.png", (~repere).astype("uint8") * 255)
+        ecrire_png(fusion / f"resultat_{numero}.png", combinaison)
+        superpositions_fusion.append(combinaison)
+
+        rouge = superposer(image, repere=repere)
+        ecrire_png(guidewire_rouge / f"resultat_{numero}.png", rouge)
+        superpositions_guidewire.append(rouge)
     exporter_gif(suivi / "animation.gif", superpositions)
+    exporter_gif(fusion / "animation.gif", superpositions_fusion)
+    exporter_gif(guidewire_rouge / "animation.gif", superpositions_guidewire)
 
 
 if __name__ == "__main__":
