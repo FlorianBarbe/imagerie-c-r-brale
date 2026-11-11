@@ -2,6 +2,9 @@ import cv2
 import numpy as np
 
 
+AIRE_MINIMALE_COMPOSANTE = 300
+
+
 def lire_image(chemin):
     if not chemin.is_file():
         raise FileNotFoundError(f"Image introuvable : {chemin}")
@@ -64,7 +67,7 @@ def segmenter_outil(reference, image):
     otsu, _ = cv2.threshold(contraste, 0, 1, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
     outil = (contraste > min(otsu + 30, 255)).astype(np.uint8)
     _, etiquettes, stats, _ = cv2.connectedComponentsWithStats(outil, connectivity=8)
-    garder = stats[:, cv2.CC_STAT_AREA] >= 20
+    garder = stats[:, cv2.CC_STAT_AREA] >= AIRE_MINIMALE_COMPOSANTE
     garder[0] = False
     composantes = garder[etiquettes].astype(np.uint8)
     noyau = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
@@ -75,6 +78,6 @@ def segmenter_outil(reference, image):
         "Filtrage spectral": filtree,
         "Contraste au percentile 99": contraste,
         "Otsu + 30": 1 - outil,
-        "Composantes ≥ 20 px": 1 - composantes,
+        f"Composantes ≥ {AIRE_MINIMALE_COMPOSANTE} px": 1 - composantes,
         "Fermeture 3×3": ~masque,
     }, masque

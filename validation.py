@@ -41,9 +41,10 @@ def exporter_scores(dossier, scores):
             print(f"{nom} — moyenne {moyenne:.6g}, écart-type {ecart_type:.6g}")
 
 
-
-def exporter_scores_intermediaires(dossier, scores):
-    with (dossier / "scores_etapes.csv").open("w", newline="") as fichier:
-        writer = csv.writer(fichier)
-        writer.writerow(("Image", "Étape", "SAD", "MSE", "PSNR (dB)"))
-        writer.writerows(scores)
+def compter_erreurs(estimation, reference):
+    vp = int(np.count_nonzero(estimation & reference))
+    fp = int(np.count_nonzero(estimation & ~reference))
+    fn = int(np.count_nonzero(~estimation & reference))
+    rappel = vp / (vp + fn) if vp + fn else float("nan")
+    precision = vp / (vp + fp) if vp + fp else float("nan")
+    return vp, fp, fn, rappel, precision
