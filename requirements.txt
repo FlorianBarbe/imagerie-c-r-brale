@@ -1,0 +1,5 @@
+numpy
+opencv-python-headless
+matplotlib
+scikit-image
+Pillow

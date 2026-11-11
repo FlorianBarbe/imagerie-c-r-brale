@@ -2,6 +2,9 @@ import cv2
 import numpy as np
 
 
+AIRE_MINIMALE_COMPOSANTE = 300
+
+
 def lire_image(chemin):
     if not chemin.is_file():
         raise FileNotFoundError(f"Image introuvable : {chemin}")
@@ -32,23 +35,6 @@ def filtrer(reference, image):
     return difference, gauss, filtree
 
 
-def calculer_masque(reference, image):
-    """Renvoie le masque binaire utilisé pour le suivi de pointe."""
-    _, _, filtree = filtrer(reference, image)
-    # Estimation robuste du bruit de la différence filtrée.
-    centree = filtree - np.median(filtree)
-    bruit = 1.4826 * np.median(np.abs(centree))
-
-    # Le seuil bas suit les contours. Le seuil haut valide chaque composante.
-    candidats = (centree > 2 * bruit).astype(np.uint8)
-    _, etiquettes, stats, _ = cv2.connectedComponentsWithStats(candidats, connectivity=8)
-    graines = np.bincount(etiquettes[centree > 4 * bruit], minlength=len(stats))
-    garder = (graines > 0) & (stats[:, cv2.CC_STAT_AREA] >= 60)
-    garder[0] = False
-    outil = garder[etiquettes].astype(np.uint8)
-    noyau = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
-    outil = cv2.morphologyEx(outil, cv2.MORPH_CLOSE, noyau)
-    return (1 - outil) * 255
 
 
 
@@ -64,7 +50,7 @@ def segmenter_outil(reference, image):
     otsu, _ = cv2.threshold(contraste, 0, 1, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
     outil = (contraste > min(otsu + 30, 255)).astype(np.uint8)
     _, etiquettes, stats, _ = cv2.connectedComponentsWithStats(outil, connectivity=8)
-    garder = stats[:, cv2.CC_STAT_AREA] >= 20
+    garder = stats[:, cv2.CC_STAT_AREA] >= AIRE_MINIMALE_COMPOSANTE
     garder[0] = False
     composantes = garder[etiquettes].astype(np.uint8)
     noyau = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
@@ -75,6 +61,6 @@ def segmenter_outil(reference, image):
         "Filtrage spectral": filtree,
         "Contraste au percentile 99": contraste,
         "Otsu + 30": 1 - outil,
-        "Composantes ≥ 20 px": 1 - composantes,
+        f"Composantes ≥ {AIRE_MINIMALE_COMPOSANTE} px": 1 - composantes,
         "Fermeture 3×3": ~masque,
     }, masque
