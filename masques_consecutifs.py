@@ -65,14 +65,18 @@ def main():
     args = parser.parse_args()
 
     reference = lire_image(args.images / "frame_201.png")
+    deja_detecte = np.zeros(reference.shape, dtype=bool)
     args.sortie.mkdir(parents=True, exist_ok=True)
     for numero in range(211, 292, 10):
         image = lire_image(args.images / f"frame_{numero}.png")
-        masque = calculer_masque(reference, image)
+        detection = calculer_masque(reference, image) == 0
+        nouveaux_pixels = detection & ~deja_detecte
+        masque = np.where(nouveaux_pixels, 0, 255).astype(np.uint8)
         destination = args.sortie / f"masque_{numero}.png"
         if not cv2.imwrite(str(destination), masque):
             raise OSError(f"Impossible d’enregistrer le masque : {destination}")
         print(f"{numero - 10} → {numero} : {destination}")
+        deja_detecte |= nouveaux_pixels
         reference = image
 
 
